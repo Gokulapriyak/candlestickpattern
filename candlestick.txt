@@ -1,0 +1,163 @@
+html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candlestick Pattern Recognition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Candlestick Pattern Recognition</h1>
+        <canvas id="candlestickChart" width="800" height="400"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/script.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+
+
+js
+
+
+const canvas = document.getElementById('candlestickChart');
+const ctx = canvas.getContext('2d');
+
+const candlestickPatterns = {
+    hammer: 'hammer',
+    doji: 'doji',
+    engulfing: 'engulfing'
+};
+
+// Generate random data for the candlesticks
+function generateRandomData(numCandles = 50) {
+    const data = [];
+    let open = 100;
+    
+    for (let i = 0; i < numCandles; i++) {
+        const high = open + Math.random() * 5 + 2;
+        const low = open - Math.random() * 5 - 2;
+        const close = open + (Math.random() - 0.5) * 10;
+        
+        data.push({ open, high, low, close });
+        open = close;
+    }
+    
+    return data;
+}
+
+// Detect candlestick patterns
+function detectPatterns(data) {
+    const patterns = [];
+    
+    for (let i = 1; i < data.length; i++) {
+        const candle = data[i];
+        const prevCandle = data[i - 1];
+        
+        // Hammer: Small body, long lower shadow
+        if (candle.close > candle.open && (candle.low < candle.open - 2 * (candle.close - candle.open))) {
+            patterns.push({ index: i, pattern: candlestickPatterns.hammer });
+        }
+        
+        // Doji: Open and close are very close
+        if (Math.abs(candle.open - candle.close) < (candle.high - candle.low) * 0.1) {
+            patterns.push({ index: i, pattern: candlestickPatterns.doji });
+        }
+        
+        // Engulfing: Current candle engulfs previous one
+        if (candle.open < candle.close && prevCandle.open > prevCandle.close &&
+            candle.open < prevCandle.close && candle.close > prevCandle.open) {
+            patterns.push({ index: i, pattern: candlestickPatterns.engulfing });
+        }
+    }
+    
+    return patterns;
+}
+
+// Plot candlestick chart with patterns
+function plotChart(data, patterns) {
+    const labels = Array.from({ length: data.length }, (_, i) => i + 1);
+
+    const chartData = {
+        labels: labels,
+        datasets: [{
+            label: 'Candlestick Chart',
+            data: data.map(d => ({
+                t: new Date(),
+                o: d.open,
+                h: d.high,
+                l: d.low,
+                c: d.close
+            })),
+            borderColor: 'black',
+            borderWidth: 1,
+            backgroundColor: (context) => {
+                const index = context.dataIndex;
+                const pattern = patterns.find(p => p.index === index);
+                
+                if (pattern) {
+                    switch (pattern.pattern) {
+                        case candlestickPatterns.hammer:
+                            return 'green'; // Hammer pattern
+                        case candlestickPatterns.doji:
+                            return 'blue'; // Doji pattern
+                        case candlestickPatterns.engulfing:
+                            return 'red'; // Engulfing pattern
+                    }
+                }
+                return 'transparent';
+            },
+            borderColor: 'black',
+            borderWidth: 1
+        }]
+    };
+
+    const config = {
+        type: 'candlestick',
+        data: chartData,
+        options: {
+            scales: {
+                x: { type: 'category' },
+                y: { type: 'linear' }
+            },
+            responsive: true
+        }
+    };
+
+    new Chart(ctx, config);
+}
+
+// Main function
+function main() {
+    const data = generateRandomData();
+    const patterns = detectPatterns(data);
+    plotChart(data, patterns);
+}
+
+main();
+
+
+
+css
+
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+canvas {
+  background-color: white;
+  border: 1px solid #ccc;
+}
